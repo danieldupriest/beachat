@@ -4,11 +4,13 @@
   "description": "Server for the Beachat application",
   "main": "serve.js",
   "scripts": {
+    "serve": "node serve.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "dotenv": "^10.0.0"
+    "dotenv": "^10.0.0",
+    "ws": "^8.2.3"
   }
 }

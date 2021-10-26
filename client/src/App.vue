@@ -1,26 +1,39 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <h2>From Server</h2>
+  <p>{{text}}</p>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
-
 export default {
   name: 'App',
   components: {
-    HelloWorld
+  },
+  data() {
+    return {
+      text: "",
+      socket: null
+    }
+  },
+  methods: {
+    sendMessage() {
+      return
+    }
+  },
+  created() {
+    //const url = `ws://${process.env.SERVER_URL}:${process.env.PORT}`
+    //console.log("Connecting to: " + url)
+    console.log("Connecting to server")
+    this.socket = new WebSocket('ws://127.0.0.1:3000')
+    this.socket.onopen = () => {
+      console.log("Opened")
+      this.socket.send("Hello Server!")
+    }
+    this.socket.onmessage = (event) => {
+      console.log("Message from server: " + event.data)
+    }
   }
 }
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
 </style>
