@@ -1,6 +1,13 @@
 <template>
-  <h2>From Server</h2>
-  <p>{{text}}</p>
+  <div class="page">
+    <h2>Beachat</h2>
+    <code>
+      <p v-for="(line, index) in terminal" :key="index">
+        {{line}}
+      </p>
+      </code>
+    <input type="text" v-on:keyup.enter="send" v-model="input" />
+  </div>
 </template>
 
 <script>
@@ -10,27 +17,35 @@ export default {
   },
   data() {
     return {
-      text: "",
+      input: "",
+      terminal: [],
       socket: null
     }
   },
   methods: {
-    sendMessage() {
-      return
+    send() {
+      console.log("In send: Input:" + this.input)
+      this.socket.send(this.input)
+    },
+    addLine(line) {
+      this.terminal.push(line)
+    },
+    connect(name) {
+      this.addLine("Connecting to server")
+      this.socket = new WebSocket(`ws://127.0.0.1:3000?name=${name}`)
+      this.socket.onopen = () => {
+        this.addLine("Connection established")
+        this.socket.send("/connect")
+      }
+      this.socket.onmessage = (event) => {
+        this.addLine(event.data)
+      }
     }
   },
   created() {
-    //const url = `ws://${process.env.SERVER_URL}:${process.env.PORT}`
-    //console.log("Connecting to: " + url)
-    console.log("Connecting to server")
-    this.socket = new WebSocket('ws://127.0.0.1:3000')
-    this.socket.onopen = () => {
-      console.log("Opened")
-      this.socket.send("Hello Server!")
-    }
-    this.socket.onmessage = (event) => {
-      console.log("Message from server: " + event.data)
-    }
+    const randomUserName = "user" + Math.floor(Math.random() * 9999)
+    const name = prompt("Enter a user name", randomUserName)
+    this.connect(name)
   }
 }
 </script>
