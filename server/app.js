@@ -87,8 +87,7 @@ class App {
             return false
         })
     }
-    privateMessage(fromUser, toUserName, message) {
-        const toUser = this.getUser(toUserName)
+    privateMessage(fromUser, toUser, message) {
         toUser.send(`Private message from ${fromUser.name}: ${message}`)
     }
     handle(message, user) {

@@ -13,10 +13,11 @@ app.command('/join', (args, user) => {
     app.joinChannel(user, channel)
 })
 
-app.command('/message', (args, user) => {
+app.command('/message', (args, fromUser) => {
     const toUserName = args[1]
+    const toUser = app.getUser(toUserName)
     const message = args.slice(2).join(' ')
-    app.privateMessage(user, toUserName, message)
+    app.privateMessage(fromUser, toUser, message)
 })
 
 app.command('/users', (args, user) => {
