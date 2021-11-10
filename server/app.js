@@ -5,6 +5,11 @@ class User {
         this.channel = "#general"
         this.send("Server: Welcome to the Beachat server! Type '/help' for instructions and a list of commands you can use.")
     }
+    changeName(newName) {
+        this.name = newName
+        this.socket.name = newName
+        this.send(`Server: Name changed to ${newName}`)
+    }
     send(message) {
         this.socket.send(message)
     }
@@ -56,12 +61,15 @@ class App {
             })
         }
     }
+    getChannels() {
+        return this.channels
+    }
     getUser(name) {
-        this.users.map((user) => {
+        for (const user of this.users) {
             if(user.name == name) {
                 return user
             }
-        })
+        }
         return null
     }
     getUsers() {
@@ -86,9 +94,6 @@ class App {
             }
             return false
         })
-    }
-    privateMessage(fromUser, toUser, message) {
-        toUser.send(`Private message from ${fromUser.name}: ${message}`)
     }
     handle(message, user) {
         for (const command of this.commands) {

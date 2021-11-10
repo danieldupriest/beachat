@@ -13,11 +13,37 @@ app.command('/join', (args, user) => {
     app.joinChannel(user, channel)
 })
 
+app.command('/channels', (args, fromUser) => {
+    const channels = app.getChannels()
+    fromUser.send('Server: These channels are available:')
+    channels.sort((a,b) => {
+        if (a.name < b.name) {
+            return -1
+        } else if (a.name > b.name) {
+            return 1
+        }
+        return 0
+    })
+    channels.map((channel) => {
+        fromUser.send(channel.name)
+    })
+})
+
 app.command('/message', (args, fromUser) => {
     const toUserName = args[1]
     const toUser = app.getUser(toUserName)
     const message = args.slice(2).join(' ')
-    app.privateMessage(fromUser, toUser, message)
+    console.log(`Sending private message from ${fromUser.name} to ${toUser.name}.`)
+    toUser.send(`Private message from ${fromUser.name}: ${message}`)
+})
+
+app.command('/name', (args, fromUser) => {
+    const newName = args[1]
+    if (newName == undefined || newName == '') {
+        fromUser.send("Server: You must specify a newname.")
+        return
+    }
+    fromUser.changeName(newName)
 })
 
 app.command('/users', (args, user) => {
