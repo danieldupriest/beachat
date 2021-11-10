@@ -6,7 +6,7 @@
         {{line}}
       </p>
       </code>
-    <input id="input" type="text" v-on:keyup.enter="send" v-model="input" placeholder="Type message here"/>
+    <input ref="input" id="input" type="text" v-on:keyup.enter="send" v-model="input" placeholder="Type message here"/>
   </div>
 </template>
 
@@ -47,6 +47,7 @@ export default {
     const randomUserName = "user" + Math.floor(Math.random() * 9999)
     const name = prompt("Enter a user name", randomUserName)
     this.connect(name)
+    this.$refs.input.focus()
   }
 }
 </script>
@@ -79,12 +80,12 @@ html, body {
 }
 #terminal {
   background: #444;
+  border: 1em solid #444;
   border-radius: 15px;
   color: #eee;
   display: block;
   height: calc(100vh - 10rem);
   overflow-y: scroll;
-  padding: 1em;
 }
 #terminal p {
   margin: .25em 0 0 0;

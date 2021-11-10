@@ -29,6 +29,15 @@ app.command('/channels', (args, fromUser) => {
     })
 })
 
+app.command('/help', (args, fromUser) => {
+    fromUser.send("Server: The following commands are available:")
+    fromUser.send("/join [channel] Join a different channel. If it does not already exist it will be created.")
+    fromUser.send("/channels       List all available channels.")
+    fromUser.send("/message [username] [message] Send a private message to another user.")
+    fromUser.send("/name [name] Change your username.")
+    fromUser.send("/users List all users currently connected.")
+})
+
 app.command('/message', (args, fromUser) => {
     const toUserName = args[1]
     const toUser = app.getUser(toUserName)
