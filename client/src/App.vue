@@ -24,8 +24,8 @@ export default {
   },
   methods: {
     send() {
-      console.log("In send: Input:" + this.input)
       this.socket.send(this.input)
+      this.input = ''
     },
     addLine(line) {
       this.terminal.push(line)
@@ -37,7 +37,6 @@ export default {
       this.socket = new WebSocket(`ws://127.0.0.1:3000?name=${name}`)
       this.socket.onopen = () => {
         this.addLine("Connection established")
-        this.socket.send("/connect")
       }
       this.socket.onmessage = (event) => {
         this.addLine(event.data)
