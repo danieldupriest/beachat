@@ -97,9 +97,15 @@ class App {
     }
     handle(message, user) {
         for (const command of this.commands) {
+            console.log(`Checking ${comand.trigger} against ${message}`)
             if(message.startsWith(command.trigger)) {
+                console.log(`Matched '${command.trigger}'!`)
                 //console.log("Calling command.func with " + message + " and " + user.name)
-                return command.func(message.split(' '), user)
+                try {
+                    return command.func(message.split(' '), user)
+                } catch (e) {
+                    console.log("Error: " + e)
+                }
             }
         }
     }
