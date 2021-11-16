@@ -5,7 +5,7 @@
       <p v-for="(line, index) in terminal" :key="index">
         {{line}}
       </p>
-      </code>
+    </code>
     <input ref="input" id="input" type="text" v-on:keyup.enter="send" v-model="input" placeholder="Type message here"/>
   </div>
 </template>
@@ -29,12 +29,14 @@ export default {
     },
     addLine(line) {
       this.terminal.push(line)
-      const terminal = document.getElementById("terminal")
-      terminal.scrollTop = terminal.scrollHeight
+      const lastP = document.querySelector("#terminal p:last-child")
+      if(lastP) {
+        window.setTimeout(()=>lastP.scrollIntoView(), 100)
+      }
     },
     connect(name) {
       this.addLine("Connecting to server")
-      this.socket = new WebSocket(`ws://127.0.0.1:3000?name=${name}`)
+      this.socket = new WebSocket(`ws://dev.hypersweet.com:8080?name=${name}`)
       this.socket.onopen = () => {
         this.addLine("Connection established")
       }
@@ -82,13 +84,15 @@ html, body {
   background: #444;
   border: 1em solid #444;
   border-radius: 15px;
+  box-sizing: border-box;
+  height: calc(100vh - 10rem);
   color: #eee;
   display: block;
-  height: calc(100vh - 10rem);
   overflow-y: scroll;
 }
 #terminal p {
-  margin: .25em 0 0 0;
+  margin: 0;
+  padding: .25em 0 0 0;
 }
 #input {
   background: #444;
