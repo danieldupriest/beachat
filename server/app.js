@@ -104,7 +104,7 @@ class App {
     joinChannel(user, channel) {
         user.channel = channel
         console.log(`User ${user.name} joined channel '${channel}'`)
-        this.channelMessage(user.channel, `${user.name} joined channel '${user.channel}'.`, history=false)
+        this.channelMessage(user.channel, `${user.name} joined channel '${user.channel}'.`, false)
     }
     userMessage(name, message) {
         this.users.map((user) => {

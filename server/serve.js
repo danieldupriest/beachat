@@ -33,6 +33,7 @@ app.command('/help', (args, fromUser) => {
     fromUser.send("The following commands are available:")
     fromUser.send("- /join [channel] Join a different channel. If it does not already exist it will be created.")
     fromUser.send("- /channels       List all available channels.")
+    fromUser.send("- /history [num]  This will show the last [num] messages sent in the current channel.
     fromUser.send("- /message [username] [message] Send a private message to another user.")
     fromUser.send("- /name [name] Change your username.")
     fromUser.send("- /users List all users currently connected.")
