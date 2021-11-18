@@ -92,7 +92,7 @@ html, body {
 }
 #terminal p {
   margin: 0;
-  padding: .25em 0 0 0;
+  padding: .5em 0 0 0;
 }
 #input {
   background: #444;
