@@ -3,12 +3,12 @@ class User {
         this.name = name
         this.socket = socket
         this.channel = "#general"
-        this.send("Server: Welcome to the Beachat server! Type '/help' for instructions and a list of commands you can use.")
+        this.send("Welcome to the Beachat server! Type '/help' for instructions and a list of commands you can use.")
     }
     changeName(newName) {
         this.name = newName
         this.socket.name = newName
-        this.send(`Server: Name changed to ${newName}`)
+        this.send(`Name changed to ${newName}`)
     }
     send(message) {
         this.socket.send(message)
@@ -43,7 +43,7 @@ class App {
     createUser(name, ws) {
         const newUser = new User(name, ws)
         this.users.push(newUser)
-        this.channelMessage("#general", `Server: ${newUser.name} joined channel #general.`)
+        this.channelMessage("#general", `${newUser.name} joined channel #general.`)
         return newUser
     }
     command(trigger, func) {
@@ -78,7 +78,7 @@ class App {
     joinChannel(user, channel) {
         user.channel = channel
         console.log(`User ${user.name} joined channel '${channel}'`)
-        this.channelMessage(user.channel, `Server: ${user.name} joined channel '${user.channel}'.`)
+        this.channelMessage(user.channel, `${user.name} joined channel '${user.channel}'.`)
     }
     userMessage(name, message) {
         this.users.map((user) => {
