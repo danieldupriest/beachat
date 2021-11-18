@@ -2,6 +2,7 @@ require('dotenv').config()
 const url = require('url')
 const ws = require('ws')
 const App = require('./app')
+const db = require('./database.js')
 
 const app = new App()
 

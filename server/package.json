@@ -12,6 +12,7 @@
   "dependencies": {
     "dotenv": "^10.0.0",
     "nodemon": "^2.0.15",
+    "sqlite3": "^5.0.2",
     "ws": "^8.2.3"
   }
 }
