@@ -15,7 +15,7 @@ app.command('/join', (args, user) => {
 
 app.command('/channels', (args, fromUser) => {
     const channels = app.getChannels()
-    fromUser.send('Server: These channels are available:')
+    fromUser.send('These channels are available:')
     channels.sort((a,b) => {
         if (a.name < b.name) {
             return -1
@@ -30,12 +30,12 @@ app.command('/channels', (args, fromUser) => {
 })
 
 app.command('/help', (args, fromUser) => {
-    fromUser.send("Server: The following commands are available:")
-    fromUser.send("/join [channel] Join a different channel. If it does not already exist it will be created.")
-    fromUser.send("/channels       List all available channels.")
-    fromUser.send("/message [username] [message] Send a private message to another user.")
-    fromUser.send("/name [name] Change your username.")
-    fromUser.send("/users List all users currently connected.")
+    fromUser.send("The following commands are available:")
+    fromUser.send("- /join [channel] Join a different channel. If it does not already exist it will be created.")
+    fromUser.send("- /channels       List all available channels.")
+    fromUser.send("- /message [username] [message] Send a private message to another user.")
+    fromUser.send("- /name [name] Change your username.")
+    fromUser.send("- /users List all users currently connected.")
 })
 
 app.command('/message', (args, fromUser) => {
@@ -49,7 +49,7 @@ app.command('/message', (args, fromUser) => {
 app.command('/name', (args, fromUser) => {
     const newName = args[1]
     if (newName == undefined || newName == '') {
-        fromUser.send("Server: You must specify a newname.")
+        fromUser.send("You must specify a newname.")
         return
     }
     fromUser.changeName(newName)
@@ -57,9 +57,9 @@ app.command('/name', (args, fromUser) => {
 
 app.command('/users', (args, user) => {
     const users = app.getUsers()
-    user.send("Server: The following users are connected:")
+    user.send("The following users are connected:")
     users.map((item) => {
-        user.send(item.name)
+        user.send(`- ${item.name}`)
     })
 })
 
