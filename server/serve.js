@@ -2,7 +2,6 @@ require('dotenv').config()
 const url = require('url')
 const ws = require('ws')
 const App = require('./app')
-const db = require('./database.js')
 
 const app = new App()
 
@@ -37,6 +36,22 @@ app.command('/help', (args, fromUser) => {
     fromUser.send("- /message [username] [message] Send a private message to another user.")
     fromUser.send("- /name [name] Change your username.")
     fromUser.send("- /users List all users currently connected.")
+})
+
+app.command('/history', async (args, fromUser) => {
+    const channel = fromUser.channel
+    let num = 10
+    if (args.length > 1) {
+        const input = parseInt(args[1])
+        if (!isNaN(input)) {
+            num = input
+        }
+    }
+    const history = await app.getChannelHistory(channel, num)
+    fromUser.send(`Showing last ${num} messages in channel ${channel}:`)
+    history.map((message) => {
+        fromUser.send(message)
+    })
 })
 
 app.command('/message', (args, fromUser) => {

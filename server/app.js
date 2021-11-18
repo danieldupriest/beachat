@@ -1,3 +1,5 @@
+const db = require("./database")
+
 class User {
     constructor(name, socket) {
         this.name = name
@@ -43,7 +45,7 @@ class App {
     createUser(name, ws) {
         const newUser = new User(name, ws)
         this.users.push(newUser)
-        this.channelMessage("#general", `${newUser.name} joined channel #general.`)
+        this.joinChannel(newUser, "#general")
         return newUser
     }
     command(trigger, func) {
@@ -52,14 +54,38 @@ class App {
             func: func
         })
     }
-    channelMessage(channel, message) {
+    channelMessage(channel, message, history=true) {
         if(this.channelExists(channel)) {
             this.users.map((user) => {
                 if (user.channel == channel) {
                     user.send(message)
                 }
             })
+            if(!history) {
+                return
+            }
+            db.run(`INSERT INTO messages (channel, date, message) VALUES (?, ?, ?)`, [channel, Date.now(), message], (err) => {
+                if (err) {
+                    console.log("Database error: " + err.message)
+                }
+            })
+
         }
+    }
+    getChannelHistory(channel, number) {
+        return new Promise((resolve, reject) => {
+          db.all(`SELECT message FROM messages WHERE channel = ? ORDER BY date DESC LIMIT ?`, [channel, number], (err, rows) => {
+              if (err) {
+                  reject(err.message)
+              }
+              rows.reverse()
+              let messages = rows.map((item) => {
+                return item['message']
+              })
+              
+            resolve(messages)
+          })
+        })
     }
     getChannels() {
         return this.channels
@@ -78,7 +104,7 @@ class App {
     joinChannel(user, channel) {
         user.channel = channel
         console.log(`User ${user.name} joined channel '${channel}'`)
-        this.channelMessage(user.channel, `${user.name} joined channel '${user.channel}'.`)
+        this.channelMessage(user.channel, `${user.name} joined channel '${user.channel}'.`, history=false)
     }
     userMessage(name, message) {
         this.users.map((user) => {

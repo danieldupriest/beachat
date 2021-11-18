@@ -9,9 +9,9 @@ let db = new sqlite3.Database(DB_FILE, (err) => {
   console.log("Connected to SQlite database")
 })
 
-db.get(`SELECT COUNT(*) FROM message`, (err, row) => {
+db.get(`SELECT COUNT(*) FROM messages`, (err, row) => {
   if(err) {
-    db.get(`CREATE TABLE message (id INTEGER PRIMARY KEY AUTOINCREMENT, date text, message text)`, (err, row) => {
+    db.get(`CREATE TABLE messages (id INTEGER PRIMARY KEY AUTOINCREMENT, channel TEXT, date INTEGER, message TEXT)`, (err, row) => {
       if(err) {
         console.log(err.message)
         return
