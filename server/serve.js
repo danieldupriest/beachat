@@ -86,7 +86,7 @@ app.command('', (args, user) => {
     app.channelMessage(user.channel, `${user.name}: ${message}`)
 })
 
-const wss = new ws.WebSocketServer({ port: process.env.PORT })
+const wss = new ws.WebSocketServer({ port: process.env.PORT || 8080 })
 wss.on('connection', (ws, req) => {
     const connectUrl = new URL("http://localhost/" + req.url)
     const name = connectUrl.searchParams.get('name')
