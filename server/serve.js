@@ -2,12 +2,14 @@ require('dotenv').config()
 const url = require('url')
 const ws = require('ws')
 const App = require('./app')
+const { Message } = require('./database')
 
 const PORT = process.env.PORT || 8080
 const app = new App()
 
 app.command('/channels', (args, fromUser) => {
     const channels = app.getChannels()
+    console.log(channels)
     channels.sort()
     fromUser.send('These channels are available:')
     channels.map((channel) => {
@@ -39,11 +41,11 @@ app.command('/history', async (args, fromUser) => {
     const history = await app.getChannelHistory(channel, num)
     fromUser.send(`Showing last ${num} messages in channel ${channel}:`)
     history.map((message) => {
-        fromUser.send(`- ${message}`)
+        fromUser.send(`- ${message.text}`)
     })
 })
 
-app.command('/join', (args, fromUser) => {
+app.command('/join', async (args, fromUser) => {
     if (args.length < 2) {
         return fromUser.send("You must specify a channel name")
     }
@@ -51,10 +53,7 @@ app.command('/join', (args, fromUser) => {
     if (!channel.startsWith("#")) {
         return fromUser.send("Channel names must begin with a #. Example: #faq")
     }
-    if(!app.channelExists(channel)) {
-        app.createChannel(channel)
-    }
-    app.joinChannel(fromUser, channel)
+    await app.joinChannel(fromUser, channel)
 })
 
 app.command("/keepalive", (args, fromUser) => {
@@ -83,10 +82,12 @@ app.command('/message', (args, fromUser) => {
 })
 
 app.command('/name', (args, fromUser) => {
+    if (args.length < 2) {
+        return fromUser.send("You must specify a new name.")
+    }
     const newName = args[1]
-    if (newName == undefined || newName == '') {
-        fromUser.send("You must specify a newname.")
-        return
+    if (newName == '') {
+        return fromUser.send("You must specify a new name.")
     }
     fromUser.changeName(newName)
 })
@@ -112,7 +113,7 @@ wss.on('connection', (ws, req) => {
     ws.name = name
     const user = app.createUser(name, ws)
     ws.on('message', (message) => {
-        app.handle(message.toString(), user)
+        app.handler(message.toString(), user)
     })
     ws.on('error', (error)=> {
         console.error(error)

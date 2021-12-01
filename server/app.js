@@ -1,5 +1,5 @@
-const db = require("./database")
-const TIMEOUT = 6 //seconds
+const { Message, Channel } = require("./database")
+const TIMEOUT = 20 //seconds
 
 class User {
     constructor(name, socket) {
@@ -14,8 +14,8 @@ class User {
         this.socket.name = newName
         this.send(`Name changed to ${newName}`)
     }
-    send(message) {
-        this.socket.send(message)
+    send(text) {
+        this.socket.send(text)
     }
 }
 
@@ -26,36 +26,43 @@ class App {
         this.commands = []
         this.loadChannels()
     }
+    
+    async channelExists(name){
+        return await Channel.exists(name)
+    }
 
-    loadChannels() {
-        this.channels = []
-        db.all(`SELECT name FROM channels ORDER BY name`, [], (err, rows) => {
-            if (err) {
-                throw new Error(`Error reading database:: ${err.message}`)
-            }
-            this.channels = []
-            for (const row of rows) {
-                this.channels.push(row.name)
+    async channelMessage(channelName, text, saveToHistory=true) {
+        if (!Channel.exists(channelName)) {
+            throw new Error(`Channel ${channel} not found.`)
+        }
+        const message = new Message(channelName, text)
+        this.users.map((user) => {
+            if (user.channel == channelName) {
+                user.send(text)
             }
         })
-    }
-    
-    channelExists(name){
-        return this.channels.includes(name)
+
+        // Return if this message should not be written to history.
+        if(saveToHistory) {
+            await message.save()
+        }
     }
 
-    createChannel(name) {
-        if (this.channels.includes(name)) {
+    command(trigger, func) {
+        this.commands.push({
+            trigger: trigger,
+            func: func
+        })
+        console.log(`Registered command '${trigger}'`)
+    }
+
+    async createChannel(name) {
+        if (await Channel.exists(name)) {
             throw new Error(`Channel ${name} already exists.`)
         }
+        const channel = new Channel(name)
+        const result = await channel.save()
         this.channels.push(name)
-        
-        // Write the channel to the database.
-        db.run(`INSERT INTO channels (name) VALUES (?)`, [name], (err) => {
-            if (err) {
-                throw new Error(`Error writing to database: ${err.message}`)
-            }
-        })
         console.log(`Created channel '${name}'.`)
     }
 
@@ -66,76 +73,7 @@ class App {
         this.joinChannel(newUser, "#general")
         return newUser
     }
-    command(trigger, func) {
-        console.log(`Registered command '${trigger}'`)
-        this.commands.push({
-            trigger: trigger,
-            func: func
-        })
-    }
-    channelMessage(channel, message, history=true) {
-        if (!this.channels.includes(channel)) {
-            throw new Error(`Channel ${channel} not found.`)
-        }
-        this.users.map((user) => {
-            if (user.channel == channel) {
-                user.send(message)
-            }
-        })        
 
-        // Return if this message should not be written to history.
-        if(!history) {
-            return
-        }
-
-        // Write the message to the channel history.
-        db.run(`INSERT INTO messages (channel, date, message) VALUES (?, ?, ?)`, [channel, Date.now(), message], (err) => {
-            if (err) {
-                throw new Error(`Error writing to database: ${err.message}`)
-            }
-        })
-    }
-    getChannelHistory(channel, number) {
-        return new Promise((resolve, reject) => {
-          db.all(`SELECT message FROM messages WHERE channel = ? ORDER BY date DESC LIMIT ?`, [channel, number], (err, rows) => {
-              if (err) {
-                  reject(err.message)
-              }
-              rows.reverse()
-              let messages = rows.map((item) => {
-                return item['message']
-              })
-              
-            resolve(messages)
-          })
-        })
-    }
-    getChannels() {
-        return this.channels
-    }
-    getUser(name) {
-        for (const user of this.users) {
-            if(user.name == name) {
-                return user
-            }
-        }
-        throw new Error("User not found")
-    }
-    getUsers() {
-        return this.users
-    }
-    joinChannel(user, channel) {
-        user.channel = channel
-        console.log(`User ${user.name} joined channel '${channel}'`)
-        this.channelMessage(user.channel, `${user.name} joined channel '${user.channel}'.`, false)
-    }
-    userMessage(name, message) {
-        this.users.map((user) => {
-            if (user.name == name) {
-                user.send(message)
-            }
-        })
-    }
     delete(user) {
         if(user.timer) {
             clearInterval(user.timer)
@@ -148,19 +86,35 @@ class App {
         })
         console.log(`Deleted user ${user.name}.`)
     }
+
     disconnect(user) {
         user.socket.close()
-        console.log(`No keepalive message received from ${user.name} for ${TIMEOUT} seconds. Connection closed.`)      
     }
-    keepalive(user) {
-        //console.debug(`In keepalive() for user ${user.name}.`)
 
-        if (user.timer) {
-            clearTimeout(user.timer)
-        }
-        user.timer = setTimeout(()=> {this.disconnect(user)}, TIMEOUT*1000)
+    async getChannelHistory(channelName, number) {
+        let results = await Message.fetchByChannel(channelName, number)
+        results.reverse()
+        return results
     }
-    handle(message, user) {
+
+    getChannels() {
+        return this.channels
+    }
+
+    getUser(name) {
+        for (const user of this.users) {
+            if(user.name == name) {
+                return user
+            }
+        }
+        throw new Error(`User ${name} not found.`)
+    }
+
+    getUsers() {
+        return this.users
+    }
+
+    handler(message, user) {
         if(message == '') {
             return
         }
@@ -175,6 +129,33 @@ class App {
                     console.error(`Error running command ${command.trigger}: ${e}`)
                 }
             }
+        }
+    }
+
+    async joinChannel(user, channelName) {
+        if (! await Channel.exists(channelName)) {
+            await this.createChannel(channelName)
+        }
+        user.channel = channelName
+        console.log(`User ${user.name} joined channel ${channelName}`)
+        this.channelMessage(user.channel, `${user.name} joined channel '${channelName}'.`, false)
+    }
+
+    keepalive(user) {
+        if (user.timer) {
+            clearTimeout(user.timer)
+        }
+        user.timer = setTimeout(()=> {
+            console.log(`No keepalive message received from ${user.name} for ${TIMEOUT} seconds. Connection closed.`)      
+            this.disconnect(user)
+        }, TIMEOUT * 1000)
+    }
+
+    async loadChannels() {
+        this.channels = []
+        const savedChannels = await Channel.fetchAll()
+        for (const channel of savedChannels) {
+            this.channels.push(channel.name)
         }
     }
 }

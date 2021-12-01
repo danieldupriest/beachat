@@ -11,7 +11,7 @@
 </template>
 
 <script>
-const KEEPALIVE_TIMER = 3
+const KEEPALIVE_TIMER = 10
 export default {
   name: 'App',
   components: {
