@@ -7,12 +7,14 @@ class User {
         this.socket = socket
         this.channel = "#general"
         this.timer = null
-        this.send("Welcome to the Beachat server! Type '/help' for instructions and a list of commands you can use.")
+        this.send("Connection established.")
+        setTimeout(() => {
+            this.send("Welcome to the Beachat server! Type '/help' for instructions and a list of commands you can use.")
+        }, 1000)
     }
     changeName(newName) {
         this.name = newName
         this.socket.name = newName
-        this.send(`Name changed to ${newName}`)
     }
     send(text) {
         this.socket.send(text)

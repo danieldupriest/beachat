@@ -40,11 +40,8 @@ export default {
       }
     },
     connect(name) {
-      this.addLine("Connecting to server")
+      this.addLine("Connecting to server...")
       this.socket = new WebSocket(`ws://localhost:8080?name=${name}`)
-      this.socket.onopen = () => {
-        this.addLine("Connection established")
-      }
       this.socket.onmessage = (event) => {
         this.addLine(event.data)
       }

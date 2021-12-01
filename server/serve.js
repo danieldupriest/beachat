@@ -89,7 +89,9 @@ app.command('/name', (args, fromUser) => {
     if (newName == '') {
         return fromUser.send("You must specify a new name.")
     }
+    const oldName = fromUser.name
     fromUser.changeName(newName)
+    this.send(`Name changed from ${oldName} to ${newName}`)
 })
 
 app.command('/users', (args, user) => {
@@ -98,6 +100,12 @@ app.command('/users', (args, user) => {
     users.map((item) => {
         user.send(`- ${item.name}`)
     })
+})
+
+app.command('/', (args, user) => {
+    const command = args[0]
+    console.log(`Unknown command: ${command}`)
+    user.send(`Unknown command: ${command}`)
 })
 
 app.command('', (args, user) => {
@@ -110,6 +118,9 @@ const wss = new ws.WebSocketServer({ port: PORT })
 wss.on('connection', (ws, req) => {
     const connectUrl = new URL("http://localhost/" + req.url)
     const name = connectUrl.searchParams.get('name')
+    if (name == null) {
+        return console.error("Web Socket connection refused. Missing name parameter.")
+    }
     ws.name = name
     const user = app.createUser(name, ws)
     ws.on('message', (message) => {
