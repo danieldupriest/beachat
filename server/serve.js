@@ -3,29 +3,15 @@ const url = require('url')
 const ws = require('ws')
 const App = require('./app')
 
+const PORT = process.env.PORT || 8080
 const app = new App()
-
-app.command('/join', (args, user) => {
-    const channel = args[1]
-    if(!app.channelExists(channel)) {
-        app.createChannel(channel)
-    }
-    app.joinChannel(user, channel)
-})
 
 app.command('/channels', (args, fromUser) => {
     const channels = app.getChannels()
+    channels.sort()
     fromUser.send('These channels are available:')
-    channels.sort((a,b) => {
-        if (a.name < b.name) {
-            return -1
-        } else if (a.name > b.name) {
-            return 1
-        }
-        return 0
-    })
     channels.map((channel) => {
-        fromUser.send(channel.name)
+        fromUser.send(`- ${channel}`)
     })
 })
 
@@ -44,22 +30,55 @@ app.command('/history', async (args, fromUser) => {
     let num = 10
     if (args.length > 1) {
         const input = parseInt(args[1])
-        if (!isNaN(input)) {
+        if (isNaN(input)) {
+            return fromUser.send("Value provided must be an integer.")
+        } else {
             num = input
         }
     }
     const history = await app.getChannelHistory(channel, num)
     fromUser.send(`Showing last ${num} messages in channel ${channel}:`)
     history.map((message) => {
-        fromUser.send(message)
+        fromUser.send(`- ${message}`)
     })
 })
 
+app.command('/join', (args, fromUser) => {
+    if (args.length < 2) {
+        return fromUser.send("You must specify a channel name")
+    }
+    const channel = args[1]
+    if (!channel.startsWith("#")) {
+        return fromUser.send("Channel names must begin with a #. Example: #faq")
+    }
+    if(!app.channelExists(channel)) {
+        app.createChannel(channel)
+    }
+    app.joinChannel(fromUser, channel)
+})
+
+app.command("/keepalive", (args, fromUser) => {
+    app.keepalive(fromUser)
+})
+
 app.command('/message', (args, fromUser) => {
+    if (args.length < 2) {
+        return fromUser.send("You must specify the target username.")
+    }
+    if (args.length < 3) {
+        return fromUser.send("You must write a message to send.")
+    }
     const toUserName = args[1]
-    const toUser = app.getUser(toUserName)
+    let toUser
+    try
+    {    
+        toUser = app.getUser(toUserName)
+    } catch (e) {
+        console.error(`Could not find user ${toUserName}`)
+        return fromUser.send(`Could not find the user ${toUserName}`)
+    }
     const message = args.slice(2).join(' ')
-    console.log(`Sending private message from ${fromUser.name} to ${toUser.name}.`)
+    console.debug(`Sending private message from ${fromUser.name} to ${toUser.name}.`)
     toUser.send(`Private message from ${fromUser.name}: ${message}`)
 })
 
@@ -86,7 +105,7 @@ app.command('', (args, user) => {
     app.channelMessage(user.channel, `${user.name}: ${message}`)
 })
 
-const wss = new ws.WebSocketServer({ port: process.env.PORT || 8080 })
+const wss = new ws.WebSocketServer({ port: PORT })
 wss.on('connection', (ws, req) => {
     const connectUrl = new URL("http://localhost/" + req.url)
     const name = connectUrl.searchParams.get('name')
@@ -95,7 +114,12 @@ wss.on('connection', (ws, req) => {
     ws.on('message', (message) => {
         app.handle(message.toString(), user)
     })
+    ws.on('error', (error)=> {
+        console.error(error)
+    })
     ws.on('close', (reasonCode, description) => {
-        app.deleteUser(ws.name)
+        app.delete(user)
     })
 })
+
+console.log(`Started Beachat Web Socket Server on port ${PORT}`)

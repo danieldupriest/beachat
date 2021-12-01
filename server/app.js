@@ -1,10 +1,12 @@
 const db = require("./database")
+const TIMEOUT = 6 //seconds
 
 class User {
     constructor(name, socket) {
         this.name = name
         this.socket = socket
         this.channel = "#general"
+        this.timer = null
         this.send("Welcome to the Beachat server! Type '/help' for instructions and a list of commands you can use.")
     }
     changeName(newName) {
@@ -17,60 +19,81 @@ class User {
     }
 }
 
-class Channel {
-    constructor(name) {
-        this.name = name
-        this.history = []
-    }
-}
-
 class App {
     constructor() {
         this.users = []
-        this.channels = [new Channel("#general")]
+        this.channels = ["#general"]
         this.commands = []
+        this.loadChannels()
     }
-    channelExists(name){
-        for (const channel of this.channels) {
-            if (name == channel.name) {
-                return true
+
+    loadChannels() {
+        this.channels = []
+        db.all(`SELECT name FROM channels ORDER BY name`, [], (err, rows) => {
+            if (err) {
+                throw new Error(`Error reading database:: ${err.message}`)
             }
-        }
-        return false
+            this.channels = []
+            for (const row of rows) {
+                this.channels.push(row.name)
+            }
+        })
     }
+    
+    channelExists(name){
+        return this.channels.includes(name)
+    }
+
     createChannel(name) {
-        console.log(`Creating channel '${name}'.`)
-        this.channels.push(new Channel(name))
+        if (this.channels.includes(name)) {
+            throw new Error(`Channel ${name} already exists.`)
+        }
+        this.channels.push(name)
+        
+        // Write the channel to the database.
+        db.run(`INSERT INTO channels (name) VALUES (?)`, [name], (err) => {
+            if (err) {
+                throw new Error(`Error writing to database: ${err.message}`)
+            }
+        })
+        console.log(`Created channel '${name}'.`)
     }
+
     createUser(name, ws) {
         const newUser = new User(name, ws)
+        this.keepalive(newUser)
         this.users.push(newUser)
         this.joinChannel(newUser, "#general")
         return newUser
     }
     command(trigger, func) {
+        console.log(`Registered command '${trigger}'`)
         this.commands.push({
             trigger: trigger,
             func: func
         })
     }
     channelMessage(channel, message, history=true) {
-        if(this.channelExists(channel)) {
-            this.users.map((user) => {
-                if (user.channel == channel) {
-                    user.send(message)
-                }
-            })
-            if(!history) {
-                return
-            }
-            db.run(`INSERT INTO messages (channel, date, message) VALUES (?, ?, ?)`, [channel, Date.now(), message], (err) => {
-                if (err) {
-                    console.log("Database error: " + err.message)
-                }
-            })
-
+        if (!this.channels.includes(channel)) {
+            throw new Error(`Channel ${channel} not found.`)
         }
+        this.users.map((user) => {
+            if (user.channel == channel) {
+                user.send(message)
+            }
+        })        
+
+        // Return if this message should not be written to history.
+        if(!history) {
+            return
+        }
+
+        // Write the message to the channel history.
+        db.run(`INSERT INTO messages (channel, date, message) VALUES (?, ?, ?)`, [channel, Date.now(), message], (err) => {
+            if (err) {
+                throw new Error(`Error writing to database: ${err.message}`)
+            }
+        })
     }
     getChannelHistory(channel, number) {
         return new Promise((resolve, reject) => {
@@ -96,7 +119,7 @@ class App {
                 return user
             }
         }
-        return null
+        throw new Error("User not found")
     }
     getUsers() {
         return this.users
@@ -113,24 +136,43 @@ class App {
             }
         })
     }
-    deleteUser(name) {
-        this.users = this.users.filter((user) => {
-            if (user.name != name) {
+    delete(user) {
+        if(user.timer) {
+            clearInterval(user.timer)
+        }
+        this.users = this.users.filter((iterUser) => {
+            if (user != iterUser) {
                 return true
             }
             return false
         })
+        console.log(`Deleted user ${user.name}.`)
+    }
+    disconnect(user) {
+        user.socket.close()
+        console.log(`No keepalive message received from ${user.name} for ${TIMEOUT} seconds. Connection closed.`)      
+    }
+    keepalive(user) {
+        //console.debug(`In keepalive() for user ${user.name}.`)
+
+        if (user.timer) {
+            clearTimeout(user.timer)
+        }
+        user.timer = setTimeout(()=> {this.disconnect(user)}, TIMEOUT*1000)
     }
     handle(message, user) {
+        if(message == '') {
+            return
+        }
+        // Iterate through registered commands
         for (const command of this.commands) {
-            //console.log(`Checking ${comand.trigger} against ${message}`)
+            //console.log(`Checking ${command.trigger} against ${message}`)
             if(message.startsWith(command.trigger)) {
-                //console.log(`Matched '${command.trigger}'!`)
-                //console.log("Calling command.func with " + message + " and " + user.name)
+                //console.log(`Received command '${command.trigger}' from ${user.name}.`)
                 try {
                     return command.func(message.split(' '), user)
                 } catch (e) {
-                    console.log("Error: " + e)
+                    console.error(`Error running command ${command.trigger}: ${e}`)
                 }
             }
         }

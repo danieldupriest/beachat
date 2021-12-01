@@ -6,11 +6,12 @@
         {{line}}
       </p>
     </code>
-    <input ref="input" id="input" type="text" v-on:keyup.enter="send" v-model="input" placeholder="Type message here"/>
+    <input ref="input" id="input" type="text" v-on:keyup.enter="sendFromInput" v-model="input" placeholder="Type message here"/>
   </div>
 </template>
 
 <script>
+const KEEPALIVE_TIMER = 3
 export default {
   name: 'App',
   components: {
@@ -19,13 +20,17 @@ export default {
     return {
       input: "",
       terminal: [],
-      socket: null
+      socket: null,
+      keepaliveTimer: null
     }
   },
   methods: {
-    send() {
-      this.socket.send(this.input)
+    sendFromInput() {
+      this.send(this.input)
       this.input = ''
+    },
+    send(message) {
+      this.socket.send(message)
     },
     addLine(line) {
       this.terminal.push(line)
@@ -36,7 +41,7 @@ export default {
     },
     connect(name) {
       this.addLine("Connecting to server")
-      this.socket = new WebSocket(`ws://dev.hypersweet.com:8080?name=${name}`)
+      this.socket = new WebSocket(`ws://localhost:8080?name=${name}`)
       this.socket.onopen = () => {
         this.addLine("Connection established")
       }
@@ -49,6 +54,9 @@ export default {
     const randomUserName = "user" + Math.floor(Math.random() * 9999)
     const name = prompt("Enter a user name", randomUserName)
     this.connect(name)
+    this.keepaliveTimer = setInterval(()=> {
+      this.send("/keepalive")
+    }, KEEPALIVE_TIMER * 1000)
     this.$refs.input.focus()
   }
 }
