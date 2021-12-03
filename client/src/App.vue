@@ -46,7 +46,7 @@ export default {
     },
     connect(name) {
       this.addLine("Connecting to server...")
-      this.socket = new WebSocket(`ws://localhost:8080?name=${name}`)
+      this.socket = new WebSocket(`ws://dev.hypersweet.com:8080?name=${name}`)
       this.socket.onmessage = (event) => {
         this.addLine(event.data)
       }
