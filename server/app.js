@@ -169,7 +169,7 @@ class App {
         }
         // Iterate through registered commands
         for (const command of this.commands) {
-            console.debug(`Checking message ${message} against command ${command.trigger}.`)
+            //console.debug(`Checking message ${message} against command ${command.trigger}.`)
             if(message.startsWith(command.trigger)) {
                 try {
                     return command.func(message.split(' '), user)
