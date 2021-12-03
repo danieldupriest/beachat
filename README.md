@@ -9,8 +9,8 @@ Beachat is an IRC-like chat client/server written in Javascript for a networking
 ## Building the client
 Note: If building with Node v17+, there is a bug which requires using the legacy openssl provider.
 
-1. Edit `/client/src/App.vue` and change the `WebSocket("ws://dev.hypersweet.com:8080...")` line to reflect your backend server url and port.
-2. Edit `/client/public/index.html` and update the `Content-Security-Policy` meta tag to allow connections to your backend server.
+1. Edit `/client/src/App.vue` and change the `WebSocket("ws://localhost:8080...")` line to reflect your backend server url and port.
+2. Edit `/client/public/index.html` and update the `Content-Security-Policy` meta tag to allow connections to your backend server. The default setup is for localhost and my server.
 3. Inside the `/client` directory, run `npm i`
 4. Run `export NODE_OPTIONS=--openssl-legacy-provider && npm run build`
 5. Copy the contents of `/client/dist` to your web server's public directory.
