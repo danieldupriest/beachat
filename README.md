@@ -17,4 +17,4 @@ Note: If building with Node v17+, there is a bug which requires using the legacy
 
 ## Running the dev server
 
-1. Inside the `/server` directory, run `node serve.js`
+1. Inside the `/server` directory, run `npm run serve`
