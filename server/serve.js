@@ -156,6 +156,7 @@ wss.on('connection', (ws, req) => {
     if (name == null) {
         return console.error("Web Socket connection refused. Missing name parameter.")
     }
+    console.debug(`User ${name} connected.`)
     ws.name = name
     const user = app.createUser(name, ws)
     ws.on('message', (message) => {
