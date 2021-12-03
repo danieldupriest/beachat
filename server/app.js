@@ -1,12 +1,12 @@
 const { Message, Channel } = require("./database")
-const TIMEOUT = 20 //seconds
+const TIMEOUT = 20 //seconds until user is disconnected for no keepalive
 
 // Stores user info and web socket connection
 class User {
     constructor(name, socket) {
         this.name = name
         this.socket = socket
-        this.channel = "#general"
+        this.channel = "#general" // Join users to #general by default
         this.timer = null
         this.send("Connection established.")
         setTimeout(() => {
@@ -29,6 +29,8 @@ class User {
 
 // Contains all core functionality needed to implement all commands.
 class App {
+
+    // Creates a new chat app server
     constructor() {
         this.users = []
         this.channels = ["#general"]
@@ -37,12 +39,16 @@ class App {
     }
 
     // Returns true if a channel already exists
+    // @param {string} name Name of the channel to check
     async channelExists(name){
         return await Channel.exists(name)
     }
 
     // Send a message to all users of the specified channel.
     // By default, messages will be stored in a channel's history.
+    // @param {string} channelName Name of the channel to send in
+    // @param {string} text Message body
+    // @param {boolean} saveToHistory Writes the message to history if true
     async channelMessage(channelName, text, saveToHistory=true) {
         if (!Channel.exists(channelName)) {
             throw new Error(`Channel ${channel} not found.`)
@@ -54,7 +60,6 @@ class App {
             }
         })
 
-        // Return if this message should not be written to history.
         if(saveToHistory) {
             await message.save()
         }
@@ -67,15 +72,18 @@ class App {
     // will have access to "args", which is an array of the
     // input string separated by spaces, and "fromUser", which
     // is an instance of the User class who sent the message.
+    // @param {string} trigger Command text to act as trigger
+    // @param {function} func Code to execute for this command
     command(trigger, func) {
         this.commands.push({
             trigger: trigger,
             func: func
         })
-        console.log(`Registered command '${trigger}'`)
+        console.debug(`Registered command '${trigger}'`)
     }
 
     // Attempts to create a new channel
+    // @param {string} name New channel name
     async createChannel(name) {
         if (await Channel.exists(name)) {
             throw new Error(`Channel ${name} already exists.`)
@@ -83,10 +91,12 @@ class App {
         const channel = new Channel(name)
         const result = await channel.save()
         this.channels.push(name)
-        console.log(`Created channel '${name}'.`)
+        console.debug(`Created channel ${name}.`)
     }
 
     // Called whenever a new user connects.
+    // @param {string} name Name of new user
+    // @param {object} ws Web Socket with user's connection
     createUser(name, ws) {
         const newUser = new User(name, ws)
         this.keepalive(newUser)
@@ -95,7 +105,9 @@ class App {
         return newUser
     }
 
-    // Removes a user from the user list.
+    // Removes a user from the user list. Note, this will not
+    // disconnect them. Use app.disconnect() for that.
+    // @param {object} user User object to delete from server
     delete(user) {
         if(user.timer) {
             clearInterval(user.timer)
@@ -106,16 +118,19 @@ class App {
             }
             return false
         })
-        console.log(`Deleted user ${user.name}.`)
+        console.debug(`Deleted user ${user.name}.`)
     }
 
     // Disconnects the specified user.
+    // @param {object} user User to disconnect.
     disconnect(user) {
         user.socket.close()
     }
 
     // Retrieves either the last 10 messages sent in a channel,
     // or the last "number" of messages.
+    // @param {string} channelName Name of the channel
+    // @param {number} number Number of messages to retrieve
     async getChannelHistory(channelName, number) {
         let results = await Message.fetchByChannel(channelName, number)
         results.reverse()
@@ -127,7 +142,8 @@ class App {
         return this.channels
     }
 
-    // Attempts to retrieve the user whose name is specified.
+    // Attempts to retrieve the user object with the specified name.
+    // @param {string} name Name of user object to retrieve.
     getUser(name) {
         for (const user of this.users) {
             if(user.name == name) {
@@ -137,7 +153,7 @@ class App {
         throw new Error(`User ${name} not found.`)
     }
 
-    // Retrieves a list of all connected.
+    // Retrieves a list of all connected users.
     getUsers() {
         return this.users
     }
@@ -145,15 +161,16 @@ class App {
     // This function is attached to the web socket server's
     // "message" event, and iterates through all registered
     // commands looking for a match.
+    // @param {string} message Incoming message to be handled.
+    // @user {object} user User who sent the message to be handled.
     handler(message, user) {
         if(message == '') {
             return
         }
         // Iterate through registered commands
         for (const command of this.commands) {
-            //console.log(`Checking ${command.trigger} against ${message}`)
+            console.debug(`Checking message ${message} against command ${command.trigger}.`)
             if(message.startsWith(command.trigger)) {
-                //console.log(`Received command '${command.trigger}' from ${user.name}.`)
                 try {
                     return command.func(message.split(' '), user)
                 } catch (e) {
@@ -166,24 +183,26 @@ class App {
     // This will attempt to join a user to the specified channel.
     // If the channel does not exist, it will be created and the
     // user will be joined.
+    // @param {object} user User who wishes to join the channel
+    // @param {string} channelName Channel to create and/or join.
     async joinChannel(user, channelName) {
         if (! await Channel.exists(channelName)) {
             await this.createChannel(channelName)
         }
         user.channel = channelName
-        console.log(`User ${user.name} joined channel ${channelName}`)
         this.channelMessage(user.channel, `${user.name} joined channel '${channelName}'.`, false)
     }
 
     // Function which resets the keepalive timeout. If "TIMEOUT"
     // seconds elapse without a "/keepalive" message from the user,
     // they will be disconnected.
+    // @param {object} user User whose keepalive request should be handled.
     keepalive(user) {
         if (user.timer) {
             clearTimeout(user.timer)
         }
         user.timer = setTimeout(()=> {
-            console.log(`No keepalive message received from ${user.name} for ${TIMEOUT} seconds. Connection closed.`)      
+            console.debug(`No keepalive message received from ${user.name} for ${TIMEOUT} seconds. Connection will be closed.`)
             this.disconnect(user)
         }, TIMEOUT * 1000)
     }

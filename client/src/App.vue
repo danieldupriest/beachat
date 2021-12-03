@@ -6,7 +6,11 @@
         {{line}}
       </p>
     </code>
-    <input ref="input" id="input" type="text" v-on:keyup.enter="sendFromInput" v-model="input" placeholder="Type message here"/>
+    <div id="row">
+      <input ref="input" id="input" type="text" v-on:keyup.enter="sendFromInput" v-model="input" placeholder="Type message here"/>
+      <input id="sendKeepalive" type="checkbox" v-model='sendKeepalive' checked=true/>
+      <label for="sendKeepalive">Keepalive</label>
+    </div>
   </div>
 </template>
 
@@ -21,7 +25,8 @@ export default {
       input: "",
       terminal: [],
       socket: null,
-      keepaliveTimer: null
+      keepaliveTimer: null,
+      sendKeepalive: true
     }
   },
   methods: {
@@ -52,7 +57,9 @@ export default {
     const name = prompt("Enter a user name", randomUserName)
     this.connect(name)
     this.keepaliveTimer = setInterval(()=> {
-      this.send("/keepalive")
+      if (this.sendKeepalive) {
+        this.send("/keepalive")
+      }
     }, KEEPALIVE_TIMER * 1000)
     this.$refs.input.focus()
   }
@@ -87,23 +94,40 @@ html, body {
 }
 #terminal {
   background: #444;
-  border: 1em solid #444;
+  /*border: 1em solid #444;*/
   border-radius: 15px;
   box-sizing: border-box;
   height: calc(100vh - 10rem);
   color: #eee;
   display: block;
   overflow-y: scroll;
+  padding: 0 0 0 1em;
 }
 #terminal p {
   margin: 0;
   padding: .5em 0 0 0;
 }
+#row {
+  align-items: center;
+  display: flex;
+  font-family: monospace;
+}
+#row #sendKeepalive {
+  display: block;
+  margin: 0 1em;
+}
+#row label {
+  color: #555;
+  display: block;
+}
+#sendKeepalive:checked + label {
+  color: #eee;
+}
 #input {
   background: #444;
   border-radius: 15px;
   color: #eee;
-  font-family: monospace;
+  flex-grow: 1;
   height: 1rem;
   margin-top: 1em;
   padding: .5em 1em .5em 1em;

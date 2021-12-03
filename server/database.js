@@ -8,16 +8,24 @@ const db = new sqlite3.Database(DB_FILE, (err) => {
   console.log("Connected to SQlite database")
 })
 
+// Dataclass to store channel information
 class Channel {
+
+  // Creates a new channel
+  // @param {string} name Name of the channel beginning with #
+  // @param {number} id ID of the channel for the database
   constructor(name, id=0) {
     this.id = id
     this.name = name
   }
 
+  // Converts a channel to string representation
   toString() {
     return `${this.name}`
   }
 
+  // Asynchronously returns true if a given channel exists in the database
+  // @param {string} name Name of the channel to check
   static exists(name) {
     return new Promise((resolve, reject) => {
       db.all(`SELECT * FROM channels WHERE name=?`, [name], (err, rows) => {
@@ -32,6 +40,7 @@ class Channel {
     })
   }
 
+  // Asynchronously returns a sorted list of all channels
   static fetchAll() {
     return new Promise((resolve, reject) => {
       db.all(`SELECT * FROM channels ORDER BY name DESC`, [], (err, rows) => {
@@ -48,6 +57,7 @@ class Channel {
     })
   }
 
+  // Asynchronously saves a new channel to the database
   save() {
     return new Promise((resolve, reject) => {
       db.serialize(()=> {
@@ -68,7 +78,14 @@ class Channel {
   }
 }
 
+// Dataclass to store message history in the database
 class Message {
+
+  // Creates a new message
+  // @param {string} channel Channel a message was sent in
+  // @param {string} text Message body
+  // @param {number} id ID of a message (for database)
+  // @param {date} date Unix timestamp for the message
   constructor(channel, text, id=0, date=null) {
     this.id = id
     this.channel = channel
@@ -80,10 +97,14 @@ class Message {
     }
   }
   
+  // Converts message to a string representation
   toString() {
     return `${this.date.toString()} - ${this.channel} - ${this.text}`
   }
 
+  // Asynchronously returns sorted history of messages for given channel
+  // @param {string} channel The channel to return messages for
+  // @param {number} number The number of messages to return
   static fetchByChannel(channel, number = 10) {
     return new Promise((resolve, reject) => {
       db.all(`SELECT * FROM messages WHERE channel = ? ORDER BY date DESC LIMIT ?`, [channel, number], (err, rows) => {
@@ -100,6 +121,7 @@ class Message {
     })
   }
 
+  // Aynchronously saves message to the database
   save() {
     return new Promise((resolve, reject) => {
       db.serialize(()=> {
