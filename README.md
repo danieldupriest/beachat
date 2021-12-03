@@ -5,6 +5,7 @@ Beachat is an IRC-like chat client/server written in Javascript for a networking
 
 1. Copy `/server/.env.sample` to `/server/.env` and update with the desired port.
 2. Inside the `/server` directory, run `npm i`
+3. If you wish to clear the database, remove `/server/database.db` and inside the `/server` directory, run `npm run init`
 
 ## Building the client
 Note: If building with Node v17+, there is a bug which requires using the legacy openssl provider.
